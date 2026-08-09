@@ -189,6 +189,7 @@ class PyrrhaWindow(QMainWindow):
     metadata_changed = Signal(object)
     buffering_finished = Signal(object)
     station_changed_sig = Signal(object)
+    source_changed_sig = Signal(str)       # entered Local / Radio / Pandora
     stations_processed = Signal(object)
     station_added_sig = Signal(object)     # Station
     station_removed_sig = Signal(object)   # Station
@@ -350,6 +351,15 @@ class PyrrhaWindow(QMainWindow):
     @property
     def playing(self):
         return self._buffer_recovery_state is not PseudoGst.PAUSED
+
+    def _set_source(self, src):
+        """Switch the active playback source, announcing the change so mode-scoped
+        state (e.g. the EQ's per-mode memory) can follow. No-op/no signal when the
+        source is unchanged."""
+        if src == self.source:
+            return
+        self.source = src
+        self.source_changed_sig.emit(src)
 
     @property
     def local_mode(self):
@@ -1422,7 +1432,7 @@ class PyrrhaWindow(QMainWindow):
 
         self._snapshot_pandora()   # keep the Pandora queue to resume later
         self.stop()
-        self.source = SOURCE_LOCAL
+        self._set_source(SOURCE_LOCAL)
         self.current_station = None
         self.current_song_index = None
         self.songs_model.clear()
@@ -1454,7 +1464,7 @@ class PyrrhaWindow(QMainWindow):
         if self.local_mode:
             return
         self._snapshot_pandora()   # keep the Pandora queue to resume later
-        self.source = SOURCE_LOCAL
+        self._set_source(SOURCE_LOCAL)
         self.stop()
         self.current_station = None
         self.current_song_index = None
@@ -1486,7 +1496,7 @@ class PyrrhaWindow(QMainWindow):
         place (see on_gst_tag)."""
         self._snapshot_pandora()   # keep the Pandora queue to resume later
         self.stop()
-        self.source = SOURCE_RADIO
+        self._set_source(SOURCE_RADIO)
         self.current_station = None
         self.current_song_index = None
         self._shuffle_order = None
@@ -2143,23 +2153,36 @@ class PyrrhaWindow(QMainWindow):
         except (IOError, ValueError):
             return {}
 
-    def get_station_eq(self, station_id):
-        """Saved EQ ({'bands': [...], 'preamp': float}) for a station, or None."""
-        if station_id is None:
-            return None
-        return self._station_eq.get(str(station_id))
+    def eq_profile_key(self):
+        """Storage key for the current mode's remembered EQ: per-station under
+        Pandora, and a single shared curve for each of Local and Radio. None when
+        Pandora has no station yet (nothing to key on)."""
+        if self.source == SOURCE_LOCAL:
+            return '__local__'
+        if self.source == SOURCE_RADIO:
+            return '__radio__'
+        sid = self.current_station_id
+        return str(sid) if sid else None
 
-    def set_station_eq(self, station_id, bands, preamp):
-        """Remember the EQ curve for a station (persisted to disk)."""
-        if station_id is None:
+    def get_eq_profile(self):
+        """Saved EQ ({'bands': [...], 'preamp': float, 'on': bool}) for the
+        current mode/station, or None."""
+        key = self.eq_profile_key()
+        return self._station_eq.get(key) if key is not None else None
+
+    def set_eq_profile(self, bands, preamp, on):
+        """Remember the EQ curve for the current mode/station (persisted)."""
+        key = self.eq_profile_key()
+        if key is None:
             return
-        self._station_eq[str(station_id)] = {
-            'bands': [float(b) for b in bands], 'preamp': float(preamp)}
+        self._station_eq[key] = {
+            'bands': [float(b) for b in bands], 'preamp': float(preamp),
+            'on': bool(on)}
         try:
             with open(self._station_eq_file(), 'w') as f:
                 json.dump(self._station_eq, f)
         except IOError:
-            logging.warning('Failed to save the per-station EQ')
+            logging.warning('Failed to save the EQ profile')
 
     def audio_stream_info(self):
         """(bitrate_kbps, sample_rate_hz, channels) for the current stream; any
