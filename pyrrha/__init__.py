@@ -10,7 +10,7 @@
 # MERCHANTABILITY, SATISFACTORY QUALITY, or FITNESS FOR A PARTICULAR
 # PURPOSE.  See the GNU General Public License for more details.
 
-__version__ = "0.4.68-qt"
+__version__ = "0.4.69-qt"
 
 # Pyrrha's own application id. Everything identity-related derives from it:
 # the GSettings schema (+ .plugin / .plugin-enabled children), the libsecret

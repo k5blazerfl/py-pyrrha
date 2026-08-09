@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyrrha"
-version = "0.4.68"
+version = "0.4.69"
 description = "A skinnable Qt (PySide6) audio player with classic Winamp 2.x fidelity — Pandora radio and local files; built on Pithos' core"
 readme = "pyrrha/README.md"
 requires-python = ">=3.10"

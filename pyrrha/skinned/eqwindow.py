@@ -197,8 +197,12 @@ class SkinnedEqWindow(QWidget):
         model = getattr(controller, 'songs_model', None)
         if model is not None and hasattr(model, 'dataChanged'):
             model.dataChanged.connect(self._on_rows_changed)
-        # Restore each station's remembered EQ when it becomes active.
-        controller.station_changed_sig.connect(self._on_station_changed)
+        # Restore the remembered EQ when the active profile changes: per-station
+        # under Pandora, and the shared Local/Radio curves on a mode switch.
+        controller.station_changed_sig.connect(lambda *_: self._restore_eq_profile())
+        controller.source_changed_sig.connect(lambda *_: self._restore_eq_profile())
+        # And restore the current mode's curve at startup (don't launch flat).
+        self._restore_eq_profile()
 
     def set_skin(self, skin):
         self.skin = skin
@@ -423,19 +427,17 @@ class SkinnedEqWindow(QWidget):
         self._preamp = 0.0
         if self._on:
             self._apply()
-        self._save_station_eq()
+        self._save_eq_profile()
         self.update()
 
-    # ---------------------------------------------------- per-station EQ
-    def _save_station_eq(self):
+    # ------------------------------------------------------ EQ persistence
+    def _save_eq_profile(self):
         # AUTO owns the curve while on; its derived genre presets (and any
-        # transient hand-tweaks over them) must not overwrite a station's own
+        # transient hand-tweaks over them) must not overwrite the profile's own
         # remembered curve.
         if self._auto:
             return
-        sid = getattr(self.ctl, 'current_station_id', None)
-        if sid is not None:
-            self.ctl.set_station_eq(sid, self._bands, self._preamp)
+        self.ctl.set_eq_profile(self._bands, self._preamp, self._on)
 
     # -------------------------------------------------------- AUTO genre
     def _pick_genre_preset(self):
@@ -471,22 +473,24 @@ class SkinnedEqWindow(QWidget):
         if cur is not None and top_left.row() <= cur <= bottom_right.row():
             self.update()
 
-    def _on_station_changed(self, station):
+    def _restore_eq_profile(self):
+        """Load the active profile's remembered EQ — per-station under Pandora, a
+        shared curve for each of Local and Radio. AUTO overrides with a genre pick
+        while engaged; a profile with nothing saved starts flat."""
         if self._auto:                   # AUTO drives the curve from metadata
             self._apply_auto_genre()
             return
-        sid = getattr(station, 'id', None)
-        saved = self.ctl.get_station_eq(sid)
+        saved = self.ctl.get_eq_profile()
         if saved:
             bands = [_clamp(float(v), DB_MIN, DB_MAX) for v in saved.get('bands', [])]
-            bands = (bands + [0.0] * BANDS)[:BANDS]
-            self._bands = bands
+            self._bands = (bands + [0.0] * BANDS)[:BANDS]
             self._preamp = _clamp(float(saved.get('preamp', 0.0)), DB_MIN, DB_MAX)
-            self._on = True
+            self._on = bool(saved.get('on', True))   # older saves have no 'on'
         else:
-            # A station with no remembered EQ starts flat.
+            # A profile with no remembered EQ starts flat (and enabled).
             self._bands = [0.0] * BANDS
             self._preamp = 0.0
+            self._on = True
         self._apply()
         self.update()
 
@@ -497,7 +501,7 @@ class SkinnedEqWindow(QWidget):
         if not self._on:                 # a preset implies the EQ is wanted
             self._on = True
         self._apply()
-        self._save_station_eq()
+        self._save_eq_profile()
         self.update()
 
     # -------------------------------------------------------------- paint
@@ -656,7 +660,7 @@ class SkinnedEqWindow(QWidget):
         if ON_BTN.contains(pos):
             self._on = not self._on
             self._apply()
-            self._save_station_eq()
+            self._save_eq_profile()
             self.update()
             return
         if AUTO_BTN.contains(pos):
@@ -707,7 +711,7 @@ class SkinnedEqWindow(QWidget):
             return
         if self._drag is not None:       # a band/preamp drag just finished
             self._drag = None
-            self._save_station_eq()
+            self._save_eq_profile()
         self.update()
 
     def _set_from_y(self, i, y):
