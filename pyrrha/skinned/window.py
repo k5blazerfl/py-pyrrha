@@ -959,7 +959,7 @@ class SkinnedWindow(QWidget):
             self._titledrag = False
             self.window().end_free_drag()
             return
-        pos = event.position().toPoint()
+        pos = (event.position() / self._scale()).toPoint()   # logical coords
         if self._pressed:
             if self._button_at(pos) == self._pressed:
                 self._activate(self._pressed)
