@@ -1,10 +1,10 @@
 [Desktop Entry]
 Type=Application
-Name=Pyrrha
+Name=py-pyrrha
 GenericName=Pandora Radio Client
-Comment=Listen to Pandora Radio
+Comment=Listen to Pandora Radio (legacy PyGObject build)
 Icon=io.github.k5blazerfl.Pyrrha
-Exec=/home/charron/Pyrrha/.venv-qt/bin/pyrrha
+Exec=/home/charron/py-pyrrha/.venv-qt/bin/py-pyrrha
 Terminal=false
 Categories=AudioVideo;Audio;Player;GTK;
 Keywords=Pandora;Radio;Music;
