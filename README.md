@@ -1,6 +1,12 @@
-# Pyrrha
+# py-pyrrha
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+
+> **Legacy build.** This is the original PyGObject/Pithos-derived Pyrrha, kept
+> functional and renamed `py-pyrrha`. It is superseded by the ground-up,
+> HeDE-native **Pyrrha** rewrite (GPL-2.0-or-later core; Pandora streaming
+> isolated as a separate GPLv3 plugin). This tree stays GPLv3 as a derivative
+> of Pithos and is no longer the primary line of development.
 
 A skinnable Qt (PySide6) desktop audio player with classic Winamp 2.x fidelity —
 playing both Pandora radio and your local music library.
