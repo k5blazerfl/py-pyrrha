@@ -3,9 +3,9 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pyrrha"
+name = "py-pyrrha"
 version = "0.4.69"
-description = "A skinnable Qt (PySide6) audio player with classic Winamp 2.x fidelity — Pandora radio and local files; built on Pithos' core"
+description = "Legacy PyGObject/Pithos build of Pyrrha (superseded by the HeDE-native rewrite) — a skinnable Qt (PySide6) player with classic Winamp 2.x fidelity, Pandora radio and local files"
 readme = "pyrrha/README.md"
 requires-python = ">=3.10"
 license = { text = "GPL-3.0-only" }
@@ -37,7 +37,7 @@ journald = ["systemd-python"]
 tags = ["mutagen"]
 
 [project.scripts]
-pyrrha = "pyrrha.__main__:main"
+py-pyrrha = "pyrrha.__main__:main"
 
 [project.urls]
 Homepage = "https://pithos.github.io"
